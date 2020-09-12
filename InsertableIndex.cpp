@@ -14,52 +14,42 @@ HPEN g_hPenBlue = CreatePen(PS_SOLID, 0, RGB(0, 0, 255));
 
 INT FindInsertableIndex(HWND hwndListView, POINT pt)
 {
-    RECT rcBound, rcIcon, rcLabel;
+    RECT rcBound;
     INT i, nCount = ListView_GetItemCount(hwndListView);
-    INT xOld, yOld;
     BOOL bSmall = ((GetWindowStyle(hwndListView) & LVS_TYPEMASK) != LVS_ICON);
 
     pt.x += GetScrollPos(hwndListView, SB_HORZ);
     pt.y += GetScrollPos(hwndListView, SB_VERT);
-
 
     if (GetWindowStyle(hwndListView) & LVS_ALIGNLEFT)
     {
         // vertically
         for (i = 0; i < nCount; ++i)
         {
-            ListView_GetItemRect(hwndListView, i, &rcBound, LVIR_BOUNDS);
-            ListView_GetItemRect(hwndListView, i, &rcIcon, LVIR_ICON);
-            ListView_GetItemRect(hwndListView, i, &rcLabel, LVIR_LABEL);
+            DWORD dw = ListView_GetItemSpacing(hwndListView, bSmall);
+            INT dx = LOWORD(dw);
+            INT dy = HIWORD(dw);
+            ListView_GetItemRect(hwndListView, i, &rcBound, LVIR_SELECTBOUNDS);
+            rcBound.right = rcBound.left + dx;
+            rcBound.bottom = rcBound.top + dy;
             {
                 HDC hDC = GetDC(hwndListView);
                 SelectObject(hDC, GetStockObject(NULL_BRUSH));
                 SelectObject(hDC, g_hPenBlack);
                 Rectangle(hDC, rcBound.left, rcBound.top, rcBound.right, rcBound.bottom);
-                SelectObject(hDC, g_hPenRed);
-                Rectangle(hDC, rcIcon.left, rcIcon.top, rcIcon.right, rcIcon.bottom);
-                SelectObject(hDC, g_hPenGreen);
-                Rectangle(hDC, rcLabel.left, rcLabel.top, rcLabel.right, rcLabel.bottom);
                 ReleaseDC(hwndListView, hDC);
             }
-            if (pt.x < rcBound.right && pt.y < (rcIcon.top + rcIcon.bottom) / 2)
+            if (pt.x < rcBound.right && pt.y < (rcBound.top + rcBound.bottom) / 2)
             {
                 return i;
             }
         }
         for (i = nCount - 1; i >= 0; --i)
         {
-            DWORD dw = ListView_GetItemSpacing(hwndListView, bSmall);
-            ListView_GetItemRect(hwndListView, i, &rcBound, LVIR_BOUNDS);
-            ListView_GetItemRect(hwndListView, i, &rcIcon, LVIR_ICON);
-            INT x = LOWORD(dw);
-            INT y = HIWORD(dw);
+            ListView_GetItemRect(hwndListView, i, &rcBound, LVIR_SELECTBOUNDS);
+            if (rcBound.left < pt.x && rcBound.top < pt.y)
             {
-                HDC hDC = GetDC(hwndListView);
-                SelectObject(hDC, GetStockObject(NULL_BRUSH));
-                SelectObject(hDC, g_hPenBlue);
-                Rectangle(hDC, rcBound.left, rcBound.top, rcBound.left + x, rcBound.top + y);
-                ReleaseDC(hwndListView, hDC);
+                return i + 1;
             }
         }
     }
@@ -68,37 +58,34 @@ INT FindInsertableIndex(HWND hwndListView, POINT pt)
         // horizontally
         for (i = 0; i < nCount; ++i)
         {
-            ListView_GetItemRect(hwndListView, i, &rcBound, LVIR_BOUNDS);
-            ListView_GetItemRect(hwndListView, i, &rcLabel, LVIR_LABEL);
+            DWORD dw = ListView_GetItemSpacing(hwndListView, bSmall);
+            INT dx = LOWORD(dw);
+            INT dy = HIWORD(dw);
+            ListView_GetItemRect(hwndListView, i, &rcBound, LVIR_SELECTBOUNDS);
+            rcBound.right = rcBound.left + dx;
+            rcBound.bottom = rcBound.top + dy;
             {
                 HDC hDC = GetDC(hwndListView);
                 SelectObject(hDC, GetStockObject(NULL_BRUSH));
                 SelectObject(hDC, g_hPenBlack);
                 Rectangle(hDC, rcBound.left, rcBound.top, rcBound.right, rcBound.bottom);
-                SelectObject(hDC, g_hPenRed);
-                Rectangle(hDC, rcIcon.left, rcIcon.top, rcIcon.right, rcIcon.bottom);
-                SelectObject(hDC, g_hPenGreen);
-                Rectangle(hDC, rcLabel.left, rcLabel.top, rcLabel.right, rcLabel.bottom);
                 ReleaseDC(hwndListView, hDC);
             }
-            if (pt.x < (rcIcon.left + rcIcon.right) / 2 && pt.y < rcBound.bottom)
+            if (pt.y < rcBound.bottom && pt.x < rcBound.left)
             {
                 return i;
+            }
+            if (pt.y < rcBound.bottom && pt.x < rcBound.right)
+            {
+                return i + 1;
             }
         }
         for (i = nCount - 1; i >= 0; --i)
         {
-            DWORD dw = ListView_GetItemSpacing(hwndListView, bSmall);
-            ListView_GetItemRect(hwndListView, i, &rcBound, LVIR_BOUNDS);
-            ListView_GetItemRect(hwndListView, i, &rcIcon, LVIR_ICON);
-            INT x = LOWORD(dw);
-            INT y = HIWORD(dw);
+            ListView_GetItemRect(hwndListView, i, &rcBound, LVIR_SELECTBOUNDS);
+            if (rcBound.left < pt.x && rcBound.top < pt.y)
             {
-                HDC hDC = GetDC(hwndListView);
-                SelectObject(hDC, GetStockObject(NULL_BRUSH));
-                SelectObject(hDC, g_hPenBlue);
-                Rectangle(hDC, rcBound.left, rcBound.top, rcBound.left + x, rcBound.top + y);
-                ReleaseDC(hwndListView, hDC);
+                return i + 1;
             }
         }
     }
